@@ -9,16 +9,23 @@ import shlex
 import subprocess
 import zlib
 
-## git-lego dep https://github.com/blaizard/irapp.git .irapp/__init__.py
-
-
-#This is a test
+## git-lego dep https://github.com/blaizard/irapp.git .irapp/__init__.py master 647174754
+#!/usr/bin/python
+# -*- coding: iso-8859-1 -*-
 
 ## git-lego end
 
+
+
 # Tell me more!
 
-## git-lego dep https://github.com/blaizard/irapp.git .irapp/commands.py
+## git-lego dep https://github.com/blaizard/irapp.git .irapp/commands.py master 974254555
+#!/usr/bin/python
+# -*- coding: iso-8859-1 -*-
+
+## git-lego end
+
+
 
 
 class GitLego:
@@ -184,30 +191,33 @@ class GitLego:
 	"""
 	def update(self):
 
-		tempPath = os.path.join(self.cwd, "temp")
-		with open(tempPath, "w") as fileHandle:
-			
-			index = 0
-			for dep in [item for item in self.data if item["command"] == "dep"]:
-				path = self.generateLocalDependencyPath(dep["remote"])
-				localPath = os.path.join(path, dep["local"])
-				if not os.path.isfile(localPath):
-					self.logFatal("The file '%s' referred by the 'dep' command does not exists locally" % (localPath), item["start"])
+		contentUpdated = ""
+		index = 0
 
-				# Start the copy the original file
-				fileHandle.write(self.content[index:dep["start"]])
-				index = dep["end"]
+		for dep in [item for item in self.data if item["command"] == "dep"]:
+			path = self.generateLocalDependencyPath(dep["remote"])
+			localPath = os.path.join(path, dep["local"])
+			if not os.path.isfile(localPath):
+				self.logFatal("The file '%s' referred by the 'dep' command does not exists locally" % (localPath), item["start"])
 
-				# Copy the content of the local dependency
-				localContent = ""
-				with open(localPath, "r") as localHandle:
-					localContent = localHandle.read()
-				fileHandle.write("## git-lego dep %s %s %s %i\n" % (dep["remote"], dep["local"], dep["branch"], self.checksum(localContent)))
-				fileHandle.write(localContent)
-				fileHandle.write("\n## git-lego end\n")
+			# Start the copy the original file
+			contentUpdated += self.content[index:dep["start"]]
+			index = dep["end"]
 
-			# Copy the rest of the original file
-			fileHandle.write(self.content[index:])
+			# Copy the content of the local dependency
+			localContent = ""
+			with open(localPath, "r") as localHandle:
+				localContent = localHandle.read()
+			contentUpdated += "## git-lego dep %s %s %s %i\n" % (dep["remote"], dep["local"], dep["branch"], self.checksum(localContent))
+			contentUpdated += localContent
+			contentUpdated += "\n## git-lego end\n"
+
+		# Copy the rest of the original file
+		contentUpdated += self.content[index:]
+
+		# Replace the orginal file content (note do not move the file as we want to keep permissions and owner)
+		with open(self.filePath, "w") as fileHandle:
+			fileHandle.write(contentUpdated)
 
 def gitLegoUpdate():
 
