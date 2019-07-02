@@ -9,21 +9,69 @@ import shlex
 import subprocess
 import zlib
 
-## git-lego dep https://github.com/blaizard/irapp.git .irapp/__init__.py master 647174754
+## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "master" 2882168141
 #!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
 
+import os
+
+class Commands:
+
+	@staticmethod
+	def cd(context, argList):
+		if len(argList) != 1:
+			raise Exception("Malformed cd command, must take exactly 1 argument.")
+		newPath = os.path.join(context["cwd"], argList[0])
+		newPath = os.path.normpath(newPath)
+		if not os.path.isdir(newPath):
+			raise Exception("Directory '%s' does not exists." % (newPath))
+		context["cwd"] = newPath
+
+	@staticmethod
+	def sleep(context, argList):
+		if len(argList) != 1:
+			raise Exception("Malformed sleep command, must take exactly 1 argument.")
+		time.sleep(float(argList[0]))
+
 ## git-lego end
+
+
+
+
 
 
 
 # Tell me more!
 
-## git-lego dep https://github.com/blaizard/irapp.git .irapp/commands.py master 974254555
+## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "master" 2882168141
 #!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
 
+import os
+
+class Commands:
+
+	@staticmethod
+	def cd(context, argList):
+		if len(argList) != 1:
+			raise Exception("Malformed cd command, must take exactly 1 argument.")
+		newPath = os.path.join(context["cwd"], argList[0])
+		newPath = os.path.normpath(newPath)
+		if not os.path.isdir(newPath):
+			raise Exception("Directory '%s' does not exists." % (newPath))
+		context["cwd"] = newPath
+
+	@staticmethod
+	def sleep(context, argList):
+		if len(argList) != 1:
+			raise Exception("Malformed sleep command, must take exactly 1 argument.")
+		time.sleep(float(argList[0]))
+
 ## git-lego end
+
+
+
+
 
 
 
@@ -91,7 +139,7 @@ class GitLego:
 		return os.path.join(self.deps, re.sub(r"[^\w]+", ".", path))
 
 	def checksum(self, data):
-		return zlib.crc32(data) & 0xffffffff
+		return zlib.crc32(data.strip()) & 0xffffffff
 
 	def logFatal(self, message, index = -1):
 		pre = ("Error at line %i: " % (self.getLineNumber(index))) if index >= 0 else ""
@@ -138,6 +186,8 @@ class GitLego:
 				if definition["block"] == "no":
 					self.logFatal("Command '%s' do not accept blocks" % (item["command"]), item["start"])
 				item.update({
+					"blockStart": item["end"],
+					"blockEnd": nextItem["start"],
 					"end": nextItem["end"]
 				})
 				i += 1
@@ -208,7 +258,7 @@ class GitLego:
 			localContent = ""
 			with open(localPath, "r") as localHandle:
 				localContent = localHandle.read()
-			contentUpdated += "## git-lego dep %s %s %s %i\n" % (dep["remote"], dep["local"], dep["branch"], self.checksum(localContent))
+			contentUpdated += "## git-lego dep \"%s\" \"%s\" \"%s\" %i\n" % (dep["remote"], dep["local"], dep["branch"], self.checksum(localContent))
 			contentUpdated += localContent
 			contentUpdated += "\n## git-lego end\n"
 
@@ -219,6 +269,27 @@ class GitLego:
 		with open(self.filePath, "w") as fileHandle:
 			fileHandle.write(contentUpdated)
 
+	"""
+	Give the status of the git entries
+	"""
+	def status(self):
+
+		status = {
+			"modified": []
+		}
+
+		# Read the content of each dependencies and check the checksum 
+		for dep in [item for item in self.data if item["command"] == "dep"]:
+			content = self.content[dep["blockStart"]:dep["blockEnd"]]
+			checksum = self.checksum(content)
+			if checksum != int(dep["checksum"]):
+				status["modified"].append({
+					"content": content,
+					"dep": dep
+				})
+
+		return status
+
 def gitLegoUpdate():
 
 	gitLego = GitLego(os.path.abspath(__file__))
@@ -226,15 +297,31 @@ def gitLegoUpdate():
 	gitLego.fetch()
 	gitLego.update()
 
+def gitLegoStatus():
+
+	gitLego = GitLego(os.path.abspath(__file__))
+	gitLego.parse()
+	status = gitLego.status()
+
+	if len(status["modified"]):
+		for modified in status["modified"]:
+			dep = modified["dep"]
+			print("\tmodified: %s %s %s" % (dep["remote"], dep["local"], dep["branch"]))
+	else:
+		print("Up to date")
+
 if __name__ == "__main__":
 
 	parser = argparse.ArgumentParser(description = "Git lego project manager.")
 	subparsers = parser.add_subparsers(dest="command", help="Available commands.")
-	parserRun = subparsers.add_parser("update", help="Update the current dependencies to their last version.")
+	subparsers.add_parser("update", help="Update the current dependencies to their last version.")
+	subparsers.add_parser("status", help="Gives the status of the current file.")
 	args = parser.parse_args()
 
 	# Excecute the action
 	if args.command == "update":
 		gitLegoUpdate()
+	elif args.command == "status":
+		gitLegoStatus()
 
 	sys.exit(0)
