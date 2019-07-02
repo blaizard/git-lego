@@ -35,7 +35,6 @@ class Commands:
 
 ## git-lego end
 
-
 # Tell me more!
 
 ## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "master" 2882168141
@@ -63,6 +62,7 @@ class Commands:
 		time.sleep(float(argList[0]))
 
 ## git-lego end
+
 
 
 
@@ -274,13 +274,11 @@ class GitLego:
 
 		status = {
 			"modified": [],
-			"newer": []
+			"missing": []
 		}
 
 		# Read the content of each dependencies and check the checksum 
 		for dep in [item for item in self.data if item["command"] == "dep"]:
-
-			content = ""
 
 			# If this is a block
 			if dep.has_key("blockStart") and dep.has_key("blockEnd"):
@@ -291,25 +289,14 @@ class GitLego:
 						"content": content,
 						"dep": dep
 					})
-
-			# Check if there is an updated version upstream
-			localPath = self.generateLocalDependencyPath(dep["remote"], dep["local"])
-			if os.path.isfile(localPath):
-				with open(localPath, "r") as localHandle:
-					localContent = localHandle.read()
-					localChecksum = self.checksum(localContent)
-
-					# Means that a newer version has been fetched
-					if localChecksum != int(dep["checksum"]):
-						status["newer"].append({
-							"localContent": localContent,
-							"content": content,
-							"dep": dep
-						})
+			else:
+				status["missing"].append({
+					"dep": dep
+				})
 
 		return status
 
-def gitLegoUpdate():
+def gitLegoUpdate(force = False):
 
 	gitLego = GitLego(os.path.abspath(__file__))
 	gitLego.parse()
@@ -317,8 +304,14 @@ def gitLegoUpdate():
 	status = gitLego.status()
 
 	# Check if there is anything to update
-	if len(status["newer"]):
+	if force or len(status["modified"]) == 0:
 		gitLego.update()
+	else:
+		print("Please commit modified files first:")
+		for modified in status["modified"]:
+			dep = modified["dep"]
+			print("\tmodified: %s %s %s (line: %i..%i)" % (dep["remote"], dep["local"], dep["branch"], gitLego.getLineNumber(dep["start"]), gitLego.getLineNumber(dep["end"])))
+
 
 def gitLegoStatus():
 
@@ -328,17 +321,15 @@ def gitLegoStatus():
 
 	uptodate = True
 
-	if len(status["modified"]):
-		for modified in status["modified"]:
-			dep = modified["dep"]
-			print("\tmodified: %s %s %s" % (dep["remote"], dep["local"], dep["branch"]))
-			uptodate = False
+	for modified in status["modified"]:
+		dep = modified["dep"]
+		print("\tmodified: %s %s %s (line: %i..%i)" % (dep["remote"], dep["local"], dep["branch"], gitLego.getLineNumber(dep["start"]), gitLego.getLineNumber(dep["end"])))
+		uptodate = False
 
-	if len(status["newer"]):
-		for newer in status["newer"]:
-			dep = newer["dep"]
-			print("\tnewer: %s %s %s" % (dep["remote"], dep["local"], dep["branch"]))
-			uptodate = False
+	for missing in status["missing"]:
+		dep = missing["dep"]
+		print("\tmissing: %s %s %s (line: %i)" % (dep["remote"], dep["local"], dep["branch"], gitLego.getLineNumber(dep["start"])))
+		uptodate = False
 
 	if uptodate:
 		print("Already up to date.")
@@ -353,7 +344,7 @@ if __name__ == "__main__":
 
 	# Excecute the action
 	if args.command == "update":
-		gitLegoUpdate()
+		gitLegoUpdate(True)
 	elif args.command == "status":
 		gitLegoStatus()
 
