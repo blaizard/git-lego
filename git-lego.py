@@ -7,26 +7,31 @@ import os
 import re
 import shlex
 import subprocess
+import zlib
 
-## git-lego dep https://github.com/blaizard/irapp.git /.irapp/lib.py
+## git-lego dep https://github.com/blaizard/irapp.git .irapp/__init__.py
 
 
 #This is a test
 
 ## git-lego end
 
-## git-lego dep https://github.com/blaizard/irapp.git dsf
+# Tell me more!
+
+## git-lego dep https://github.com/blaizard/irapp.git .irapp/commands.py
 
 
 class GitLego:
 
-	def __init__(self, fileName, cwd = None):
+	def __init__(self, filePath, cwd = None):
 
-		with open(fileName, "r") as file:
+		self.filePath = os.path.abspath(filePath)
+		with open(self.filePath, "r") as file:
 			self.content = file.read()
 
 		# Set the current working directory
-		self.cwd = os.path.join(os.path.dirname(os.path.abspath(fileName)) if cwd == None else os.path.abspath(cwd), ".git-lego")
+		self.cwd = os.path.join(os.path.dirname(self.filePath) if cwd == None else os.path.abspath(cwd), ".git-lego")
+		self.deps = os.path.join(self.cwd, "deps")
 
 		# The matching pattern for a command
 		self.commandPattern = re.compile(r"""
@@ -41,10 +46,10 @@ class GitLego:
 				"command": True,
 				"block": "maybe",
 				"args": [
-					{"name": "remote", "regexpr": "(https?://|ssh://|file://).*", "required": True},
-					{"name": "local", "regexpr": ".*", "required": True},
-					{"name": "tag", "regexpr": ".*", "required": False, "default": None},
-					{"name": "checksum", "regexpr": ".*", "required": False, "default": None},
+					{"name": "remote", "regexpr": "(https?://|ssh://|file://).+", "required": True},
+					{"name": "local", "regexpr": ".+", "required": True},
+					{"name": "branch", "regexpr": ".+", "required": False, "default": "master"},
+					{"name": "checksum", "regexpr": "[0-9]+", "required": False, "default": None},
 				]
 			},
 			"end": {
@@ -75,11 +80,14 @@ class GitLego:
 	"""
 	Translate a path into a hash
 	"""
-	def pathToHash(self, path):
-		return re.sub(r"[^\w]+", ".", path)
+	def generateLocalDependencyPath(self, path):
+		return os.path.join(self.deps, re.sub(r"[^\w]+", ".", path))
 
-	def logFatal(self, message, line = None):
-		pre = ("Error at line %i: " % (line)) if line else ""
+	def checksum(self, data):
+		return zlib.crc32(data) & 0xffffffff
+
+	def logFatal(self, message, index = -1):
+		pre = ("Error at line %i: " % (self.getLineNumber(index))) if index >= 0 else ""
 		print("[fatal] %s%s" % (pre, message))
 		sys.exit(2)
 
@@ -101,13 +109,13 @@ class GitLego:
 			if self.definition.has_key(command):
 				# Save the data
 				data.append({
-					"start": line,
-					"end": line,
+					"start": match.start(),
+					"end": match.end(),
 					"command": command,
 					"args": args
 				})
 			else:
-				self.logFatal("Unknown command '%s'" % (command), line)
+				self.logFatal("Unknown command '%s'" % (command), match.start())
 
 		# Group command with their respective block (if any) together
 		i = 0
@@ -144,7 +152,7 @@ class GitLego:
 					else:
 						self.logFatal("Argument '%s' of command '%s' should match: %s" % (arg, item["command"], argDef["regexpr"]), item["start"])
 				elif argDef["required"] == False:
-					item[argDef["name"]] = None
+					item[argDef["name"]] = argDef["default"]
 				else:
 					self.logFatal("Command '%s' requires at least %i arguments" % (item["command"], index + 1), item["start"])
 
@@ -154,29 +162,59 @@ class GitLego:
 		#print(self.data)
 
 	"""
-	Process the previously parsed file
+	Fetch the dependencies
 	"""
-	def process(self):
+	def fetch(self):
 		if not os.path.isdir(self.cwd):
 			os.mkdir(self.cwd)
+			if not os.path.isdir(self.deps):
+				os.mkdir(self.deps)
 
 		# First fetch all dependencies
 		for remote in set(item["remote"] for item in self.data if item["command"] == "dep"):
-			pathHash = self.pathToHash(remote)
-			path = os.path.join(self.cwd, pathHash)
+			path = self.generateLocalDependencyPath(remote)
 			if not os.path.isdir(path):
 				os.mkdir(path)
 				self.shell(["git", "clone", remote, path])
 			else:
 				self.shell(["git", "pull"], cwd=path)
 
-		# Update the files
+	"""
+	Update dependencies
+	"""
+	def update(self):
+
+		tempPath = os.path.join(self.cwd, "temp")
+		with open(tempPath, "w") as fileHandle:
+			
+			index = 0
+			for dep in [item for item in self.data if item["command"] == "dep"]:
+				path = self.generateLocalDependencyPath(dep["remote"])
+				localPath = os.path.join(path, dep["local"])
+				if not os.path.isfile(localPath):
+					self.logFatal("The file '%s' referred by the 'dep' command does not exists locally" % (localPath), item["start"])
+
+				# Start the copy the original file
+				fileHandle.write(self.content[index:dep["start"]])
+				index = dep["end"]
+
+				# Copy the content of the local dependency
+				localContent = ""
+				with open(localPath, "r") as localHandle:
+					localContent = localHandle.read()
+				fileHandle.write("## git-lego dep %s %s %s %i\n" % (dep["remote"], dep["local"], dep["branch"], self.checksum(localContent)))
+				fileHandle.write(localContent)
+				fileHandle.write("\n## git-lego end\n")
+
+			# Copy the rest of the original file
+			fileHandle.write(self.content[index:])
 
 def gitLegoUpdate():
 
 	gitLego = GitLego(os.path.abspath(__file__))
 	gitLego.parse()
-	gitLego.process()
+	gitLego.fetch()
+	gitLego.update()
 
 if __name__ == "__main__":
 
