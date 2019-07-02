@@ -36,11 +36,6 @@ class Commands:
 ## git-lego end
 
 
-
-
-
-
-
 # Tell me more!
 
 ## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "master" 2882168141
@@ -68,6 +63,10 @@ class Commands:
 		time.sleep(float(argList[0]))
 
 ## git-lego end
+
+
+
+
 
 
 
@@ -104,7 +103,7 @@ class GitLego:
 					{"name": "remote", "regexpr": "(https?://|ssh://|file://).+", "required": True},
 					{"name": "local", "regexpr": ".+", "required": True},
 					{"name": "branch", "regexpr": ".+", "required": False, "default": "master"},
-					{"name": "checksum", "regexpr": "[0-9]+", "required": False, "default": None},
+					{"name": "checksum", "regexpr": "[0-9]+", "required": False, "default": 0},
 				]
 			},
 			"end": {
@@ -135,8 +134,8 @@ class GitLego:
 	"""
 	Translate a path into a hash
 	"""
-	def generateLocalDependencyPath(self, path):
-		return os.path.join(self.deps, re.sub(r"[^\w]+", ".", path))
+	def generateLocalDependencyPath(self, remote, local = ""):
+		return os.path.join(self.deps, re.sub(r"[^\w]+", ".", remote), local)
 
 	def checksum(self, data):
 		return zlib.crc32(data.strip()) & 0xffffffff
@@ -245,8 +244,7 @@ class GitLego:
 		index = 0
 
 		for dep in [item for item in self.data if item["command"] == "dep"]:
-			path = self.generateLocalDependencyPath(dep["remote"])
-			localPath = os.path.join(path, dep["local"])
+			localPath = self.generateLocalDependencyPath(dep["remote"], dep["local"])
 			if not os.path.isfile(localPath):
 				self.logFatal("The file '%s' referred by the 'dep' command does not exists locally" % (localPath), item["start"])
 
@@ -275,18 +273,39 @@ class GitLego:
 	def status(self):
 
 		status = {
-			"modified": []
+			"modified": [],
+			"newer": []
 		}
 
 		# Read the content of each dependencies and check the checksum 
 		for dep in [item for item in self.data if item["command"] == "dep"]:
-			content = self.content[dep["blockStart"]:dep["blockEnd"]]
-			checksum = self.checksum(content)
-			if checksum != int(dep["checksum"]):
-				status["modified"].append({
-					"content": content,
-					"dep": dep
-				})
+
+			content = ""
+
+			# If this is a block
+			if dep.has_key("blockStart") and dep.has_key("blockEnd"):
+				content = self.content[dep["blockStart"]:dep["blockEnd"]]
+				checksum = self.checksum(content)
+				if checksum != int(dep["checksum"]):
+					status["modified"].append({
+						"content": content,
+						"dep": dep
+					})
+
+			# Check if there is an updated version upstream
+			localPath = self.generateLocalDependencyPath(dep["remote"], dep["local"])
+			if os.path.isfile(localPath):
+				with open(localPath, "r") as localHandle:
+					localContent = localHandle.read()
+					localChecksum = self.checksum(localContent)
+
+					# Means that a newer version has been fetched
+					if localChecksum != int(dep["checksum"]):
+						status["newer"].append({
+							"localContent": localContent,
+							"content": content,
+							"dep": dep
+						})
 
 		return status
 
@@ -295,7 +314,11 @@ def gitLegoUpdate():
 	gitLego = GitLego(os.path.abspath(__file__))
 	gitLego.parse()
 	gitLego.fetch()
-	gitLego.update()
+	status = gitLego.status()
+
+	# Check if there is anything to update
+	if len(status["newer"]):
+		gitLego.update()
 
 def gitLegoStatus():
 
@@ -303,12 +326,22 @@ def gitLegoStatus():
 	gitLego.parse()
 	status = gitLego.status()
 
+	uptodate = True
+
 	if len(status["modified"]):
 		for modified in status["modified"]:
 			dep = modified["dep"]
 			print("\tmodified: %s %s %s" % (dep["remote"], dep["local"], dep["branch"]))
-	else:
-		print("Up to date")
+			uptodate = False
+
+	if len(status["newer"]):
+		for newer in status["newer"]:
+			dep = newer["dep"]
+			print("\tnewer: %s %s %s" % (dep["remote"], dep["local"], dep["branch"]))
+			uptodate = False
+
+	if uptodate:
+		print("Already up to date.")
 
 if __name__ == "__main__":
 
