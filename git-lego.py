@@ -11,16 +11,19 @@ import zlib
 
 import os
 import subprocess
+import sys
 import imp
 
-def gitLegoLoader():
+def gitLegoLoader(command = None):
+
+	if len(sys.argv) < 1 or sys.argv[1] != "git-lego": return
 	gitLegoPath = os.path.join(os.path.realpath(os.path.expanduser("~") if os.path.expanduser("~") else os.path.dirname(__file__)), ".git-lego")
 	if not os.path.isdir(gitLegoPath): os.mkdir(gitLegoPath)
 	gitLegoDepPath = os.path.join(gitLegoPath, "https.github.com.blaizard.git-lego.git")
 	if not os.path.isdir(gitLegoDepPath): subprocess.call(["git", "clone", "https://github.com/blaizard/git-lego.git", gitLegoDepPath])
 	lib = imp.load_module("lib", None, os.path.join(gitLegoDepPath, "lib"), ('', '', imp.PKG_DIRECTORY))
 	gitlego = lib.interface.Interface(__file__, cwd=gitLegoPath)
-	gitlego.status()
+	sys.exit(gitlego.exec(command) if command else gitlego.exec(sys.argv[1:]))
 
 ## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "master" 2882168141
 #!/usr/bin/python
@@ -47,6 +50,8 @@ class Commands:
 		time.sleep(float(argList[0]))
 
 ## git-lego end
+
+
 
 # Tell me more!
 
@@ -75,6 +80,8 @@ class Commands:
 		time.sleep(float(argList[0]))
 
 ## git-lego end
+
+
 
 
 def gitLegoUpdate(force = False):
@@ -118,18 +125,5 @@ def gitLegoStatus():
 if __name__ == "__main__":
 
 	gitLegoLoader()
-	sys.exit()
-
-	parser = argparse.ArgumentParser(description = "Git lego project manager.")
-	subparsers = parser.add_subparsers(dest="command", help="Available commands.")
-	subparsers.add_parser("update", help="Update the current dependencies to their last version.")
-	subparsers.add_parser("status", help="Gives the status of the current file.")
-	args = parser.parse_args()
-
-	# Excecute the action
-	if args.command == "update":
-		gitLegoUpdate(True)
-	elif args.command == "status":
-		gitLegoStatus()
 
 	sys.exit(0)

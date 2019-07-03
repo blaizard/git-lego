@@ -8,6 +8,22 @@ class Interface():
 	def __init__(self, filePath, cwd = None):
 		self.gitLego = gitlego.GitLego(filePath, cwd=cwd)
 
+	def exec(self, command):
+
+		parser = argparse.ArgumentParser(description = "Git lego project manager.")
+		subparsers = parser.add_subparsers(dest="command", help="Available commands.")
+		subparsers.add_parser("update", help="Update the current dependencies to their last version.")
+		subparsers.add_parser("status", help="Gives the status of the current file.")
+		args = parser.parse_args(command)
+
+		# Excecute the action
+		if args.command == "update":
+			self.update(True)
+		elif args.command == "status":
+			self.status()
+
+		return 0
+
 	def update(self, force = False):
 
 		self.gitLego.parse()
