@@ -2,6 +2,12 @@
 # -*- coding: iso-8859-1 -*-
 
 import sys
+import argparse
+import os
+import re
+import shlex
+import subprocess
+import zlib
 
 ## git-lego dep "https://github.com/blaizard/git-lego.git" "loader.py" "master"
 import os
@@ -75,6 +81,48 @@ class Commands:
 		time.sleep(float(argList[0]))
 
 ## git-lego end
+
+
+
+
+
+def gitLegoUpdate(force = False):
+
+	gitLego = GitLego(os.path.realpath(__file__))
+	gitLego.parse()
+	gitLego.fetch()
+	status = gitLego.status()
+
+	# Check if there is anything to update
+	if force or len(status["modified"]) == 0:
+		gitLego.update()
+	else:
+		print("Please commit modified files first:")
+		for modified in status["modified"]:
+			dep = modified["dep"]
+			print("\tmodified: %s %s %s (line: %i..%i)" % (dep["remote"], dep["local"], dep["branch"], gitLego.getLineNumber(dep["start"]), gitLego.getLineNumber(dep["end"])))
+
+
+def gitLegoStatus():
+
+	gitLego = GitLego(os.path.realpath(__file__))
+	gitLego.parse()
+	status = gitLego.status()
+
+	uptodate = True
+
+	for modified in status["modified"]:
+		dep = modified["dep"]
+		print("\tmodified: %s %s %s (line: %i..%i)" % (dep["remote"], dep["local"], dep["branch"], gitLego.getLineNumber(dep["start"]), gitLego.getLineNumber(dep["end"])))
+		uptodate = False
+
+	for missing in status["missing"]:
+		dep = missing["dep"]
+		print("\tmissing: %s %s %s (line: %i)" % (dep["remote"], dep["local"], dep["branch"], gitLego.getLineNumber(dep["start"])))
+		uptodate = False
+
+	if uptodate:
+		print("Already up to date.")
 
 if __name__ == "__main__":
 
