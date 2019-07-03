@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
 
+import argparse
+
 from . import gitlego
 
 class Interface():
@@ -8,7 +10,7 @@ class Interface():
 	def __init__(self, filePath, cwd = None):
 		self.gitLego = gitlego.GitLego(filePath, cwd=cwd)
 
-	def exec(self, command):
+	def run(self, command):
 
 		parser = argparse.ArgumentParser(description = "Git lego project manager.")
 		subparsers = parser.add_subparsers(dest="command", help="Available commands.")
