@@ -6,7 +6,7 @@ from . import gitlego
 class Interface():
 
 	def __init__(self, filePath, cwd = None):
-		self.gitLego = GitLego(filePath, cwd=cwd)
+		self.gitLego = gitlego.GitLego(filePath, cwd=cwd)
 
 	def update(force = False):
 
