@@ -9,7 +9,7 @@ import shlex
 import subprocess
 import zlib
 
-## git-lego dep "https://github.com/blaizard/git-lego.git" "loader.py" "master" 1906219065
+## git-lego dep "https://github.com/blaizard/git-lego.git" "loader.py" "master" 3752797078
 #!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
 
@@ -28,6 +28,7 @@ def gitLegoLoader(command = None):
 	sys.exit(gitlego.run(command) if command else gitlego.run(sys.argv[2:]))
 
 ## git-lego end
+
 
 
 
@@ -56,6 +57,7 @@ class Commands:
 		time.sleep(float(argList[0]))
 
 ## git-lego end
+
 
 
 
@@ -89,6 +91,7 @@ class Commands:
 		time.sleep(float(argList[0]))
 
 ## git-lego end
+
 
 
 
