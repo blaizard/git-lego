@@ -8,7 +8,7 @@ class Interface():
 	def __init__(self, filePath, cwd = None):
 		self.gitLego = gitlego.GitLego(filePath, cwd=cwd)
 
-	def update(force = False):
+	def update(self, force = False):
 
 		self.gitLego.parse()
 		self.gitLego.fetch()
@@ -23,7 +23,7 @@ class Interface():
 				dep = modified["dep"]
 				print("\tmodified: %s %s %s (line: %i..%i)" % (dep["remote"], dep["local"], dep["branch"], self.gitLego.getLineNumber(dep["start"]), self.gitLego.getLineNumber(dep["end"])))
 
-	def status():
+	def status(self):
 
 		self.gitLego.parse()
 		status = self.gitLego.status()
