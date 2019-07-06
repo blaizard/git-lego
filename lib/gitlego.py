@@ -193,6 +193,7 @@ class GitLego:
 			localContent = "%s = \"\"\"%s\"\"\"\n" % (codeVarName, localContent.replace("\"\"\"", "\\\"\"\""))
 			localContent += "import imp\n"
 			localContent += "%s = imp.new_module(\"%s\")\n" % (dep["namespace"], dep["namespace"])
+			localContent += "%s.__dict__[\"__file__\"] = __file__" % (dep["namespace"])
 			localContent += "exec(%s, %s.__dict__)" % (codeVarName, dep["namespace"])
 
 			contentUpdated += "## git-lego dep \"%s\" \"%s\" \"%s\" \"%s\" %i\n" % (dep["remote"], dep["local"], dep["branch"], dep["namespace"], self.checksum(localContent))
