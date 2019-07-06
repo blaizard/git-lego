@@ -35,6 +35,7 @@ class GitLego:
 					{"name": "remote", "regexpr": "(https?://|ssh://|file://).+", "required": True},
 					{"name": "local", "regexpr": ".+", "required": True},
 					{"name": "branch", "regexpr": ".+", "required": False, "default": "master"},
+					{"name": "namespace", "regexpr": "[a-zA-Z0-9_]+", "required": False, "default": "gitlego"},
 					{"name": "checksum", "regexpr": "[0-9]+", "required": False, "default": 0},
 				]
 			},
@@ -70,7 +71,7 @@ class GitLego:
 		return os.path.join(self.cwd, re.sub(r"[^\w]+", ".", remote), local)
 
 	def checksum(self, data):
-		return zlib.crc32(data.strip()) & 0xffffffff
+		return zlib.crc32(data.strip().encode("utf-8")) & 0xffffffff
 
 	def logFatal(self, message, index = -1):
 		pre = ("Error at line %i: " % (self.getLineNumber(index))) if index >= 0 else ""
@@ -92,7 +93,7 @@ class GitLego:
 			args = match.group("args").strip()
 			line = self.getLineNumber(match.start())
 
-			if self.definition.has_key(command):
+			if command in self.definition:
 				# Save the data
 				data.append({
 					"start": match.start(),
@@ -176,7 +177,7 @@ class GitLego:
 		for dep in [item for item in self.data if item["command"] == "dep"]:
 			localPath = self.generateLocalDependencyPath(dep["remote"], dep["local"])
 			if not os.path.isfile(localPath):
-				self.logFatal("The file '%s' referred by the 'dep' command does not exists locally" % (localPath), item["start"])
+				self.logFatal("The file '%s' referred by the 'dep' command does not exists locally" % (localPath), dep["start"])
 
 			# Start the copy the original file
 			contentUpdated += self.content[index:dep["start"]]
@@ -186,7 +187,15 @@ class GitLego:
 			localContent = ""
 			with open(localPath, "r") as localHandle:
 				localContent = localHandle.read()
-			contentUpdated += "## git-lego dep \"%s\" \"%s\" \"%s\" %i\n" % (dep["remote"], dep["local"], dep["branch"], self.checksum(localContent))
+
+			# Format the localContent to use a namespace for the piece of code
+			codeVarName = "_gitlego%i" % (dep["start"])
+			localContent = "%s = \"\"\"%s\"\"\"\n" % (codeVarName, localContent.replace("\"\"\"", "\\\"\"\""))
+			localContent += "import imp\n"
+			localContent += "%s = imp.new_module(\"%s\")\n" % (dep["namespace"], dep["namespace"])
+			localContent += "exec(%s, %s.__dict__)" % (codeVarName, dep["namespace"])
+
+			contentUpdated += "## git-lego dep \"%s\" \"%s\" \"%s\" \"%s\" %i\n" % (dep["remote"], dep["local"], dep["branch"], dep["namespace"], self.checksum(localContent))
 			contentUpdated += localContent
 			contentUpdated += "\n## git-lego end\n"
 
@@ -211,7 +220,7 @@ class GitLego:
 		for dep in [item for item in self.data if item["command"] == "dep"]:
 
 			# If this is a block
-			if dep.has_key("blockStart") and dep.has_key("blockEnd"):
+			if "blockStart" in dep and "blockEnd" in dep:
 				content = self.content[dep["blockStart"]:dep["blockEnd"]]
 				checksum = self.checksum(content)
 				if checksum != int(dep["checksum"]):
