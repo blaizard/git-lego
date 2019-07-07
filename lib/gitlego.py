@@ -173,6 +173,7 @@ class GitLego:
 
 		contentUpdated = ""
 		index = 0
+		namespaces = set()
 
 		for dep in [item for item in self.data if item["command"] == "dep"]:
 			localPath = self.generateLocalDependencyPath(dep["remote"], dep["local"])
@@ -192,13 +193,16 @@ class GitLego:
 			codeVarName = "_gitlego%i" % (dep["start"])
 			localContent = "%s = \"\"\"%s\"\"\"\n" % (codeVarName, localContent.replace("\"\"\"", "\\\"\"\""))
 			localContent += "import imp\n"
-			localContent += "%s = imp.new_module(\"%s\")\n" % (dep["namespace"], dep["namespace"])
-			localContent += "%s.__dict__[\"__file__\"] = __file__\n" % (dep["namespace"])
+			if dep["namespace"] not in namespaces:
+				localContent += "%s = imp.new_module(\"%s\")\n" % (dep["namespace"], dep["namespace"])
+				localContent += "%s.__dict__[\"__file__\"] = __file__\n" % (dep["namespace"])
 			localContent += "exec(%s, %s.__dict__)" % (codeVarName, dep["namespace"])
 
 			contentUpdated += "## git-lego dep \"%s\" \"%s\" \"%s\" \"%s\" %i\n" % (dep["remote"], dep["local"], dep["branch"], dep["namespace"], self.checksum(localContent))
 			contentUpdated += localContent
 			contentUpdated += "\n## git-lego end\n"
+
+			namespaces.add(dep["namespace"])
 
 		# Copy the rest of the original file
 		contentUpdated += self.content[index:]

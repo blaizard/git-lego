@@ -5,7 +5,7 @@ import os
 import subprocess
 import sys
 import imp
-def gitLegoLoader(command = None):
+def loader(command = None):
 	if len(sys.argv) < 2 or sys.argv[1] != "git-lego": return
 	gitLegoPath = os.path.join(os.path.realpath(os.path.expanduser("~") if os.path.expanduser("~") else os.path.dirname(__file__)), ".git-lego")
 	if not os.path.isdir(gitLegoPath): os.mkdir(gitLegoPath)
