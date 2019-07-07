@@ -1,23 +1,15 @@
 #!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
 
-import sys
-import imp
-def gitLegoLoader(command = None):
-	import lib
-	gitlego = lib.interface.Interface(__file__, cwd=".")
-	sys.exit(gitlego.run(command) if command else gitlego.run(sys.argv[2:]))
-
-## git-lego dep "https://github.com/blaizard/git-lego.git" "loader.py" "master" "gitlego" 1336233741
-_gitlego246 = """#!/usr/bin/python
+## git-lego dep "https://github.com/blaizard/git-lego.git" "loader.py" "master" "gitlego" 2123777180
+_gitlego0 = """#!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
 
 import os
 import subprocess
 import sys
-
 import imp
-def gitLegoLoader(command = None):
+def loader(command = None):
 	if len(sys.argv) < 2 or sys.argv[1] != "git-lego": return
 	gitLegoPath = os.path.join(os.path.realpath(os.path.expanduser("~") if os.path.expanduser("~") else os.path.dirname(__file__)), ".git-lego")
 	if not os.path.isdir(gitLegoPath): os.mkdir(gitLegoPath)
@@ -29,7 +21,8 @@ def gitLegoLoader(command = None):
 """
 import imp
 gitlego = imp.new_module("gitlego")
-exec(_gitlego246, gitlego.__dict__)
+gitlego.__dict__["__file__"] = __file__
+exec(_gitlego0, gitlego.__dict__)
 ## git-lego end
 
 
@@ -63,8 +56,13 @@ exec(_gitlego246, gitlego.__dict__)
 
 
 
-## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "master" "temp1" 1221058638
-_gitlego1347 = """#!/usr/bin/python
+
+
+
+
+
+## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "master" "temp1" 172558474
+_gitlego1 = """#!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
 
 import os
@@ -89,8 +87,14 @@ class Commands:
 """
 import imp
 temp1 = imp.new_module("temp1")
-exec(_gitlego1347, temp1.__dict__)
+temp1.__dict__["__file__"] = __file__
+exec(_gitlego1, temp1.__dict__)
 ## git-lego end
+
+
+
+
+
 
 
 
@@ -128,8 +132,8 @@ exec(_gitlego1347, temp1.__dict__)
 
 # Tell me more!
 
-## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "master" "temp2" 3106520206
-_gitlego2231 = """#!/usr/bin/python
+## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "master" "temp2" 1357810346
+_gitlego2 = """#!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
 
 import os
@@ -154,11 +158,17 @@ class Commands:
 """
 import imp
 temp2 = imp.new_module("temp2")
-exec(_gitlego2231, temp2.__dict__)
+temp2.__dict__["__file__"] = __file__
+exec(_gitlego2, temp2.__dict__)
 ## git-lego end
+
+
+
+
+
 
 if __name__ == "__main__":
 
-	gitLegoLoader()
+	gitlego.loader()
 
 	sys.exit(0)

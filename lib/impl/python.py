@@ -17,15 +17,14 @@ class TypePython(interface.Interface):
 	def contentToLocal(self, content, namespace):
 
 		# Format the localContent to use a namespace for the piece of code
-		codeVarName = "_gitlego%i" % (self.unique)
-		content = "%s = \"\"\"%s\"\"\"\n" % (codeVarName, content.replace("\\", "\\\\").replace("\"\"\"", "\\\"\"\""))
-		content += "import imp\n"
+		content = "\"\"\"%s\"\"\"" % (content.replace("\\", "\\\\").replace("\"\"\"", "\\\"\"\""))
+		updatedContent += "import imp\n"
 		if namespace not in self.namespaces:
-			content += "%s = imp.new_module(\"%s\")\n" % (namespace, namespace)
-			content += "%s.__dict__[\"__file__\"] = __file__\n" % (namespace)
-		content += "exec(%s, %s.__dict__)" % (codeVarName, namespace)
+			updatedContent += "%s = imp.new_module(\"%s\")\n" % (namespace, namespace)
+			updatedContent += "%s.__dict__[\"__file__\"] = __file__\n" % (namespace)
+		updatedContent += "exec(%s, %s.__dict__)" % (content, namespace)
 
 		self.unique += 1
 		self.namespaces.add(namespace)
 
-		return content
+		return updatedContent
