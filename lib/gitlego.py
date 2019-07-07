@@ -191,7 +191,7 @@ class GitLego:
 
 			# Format the localContent to use a namespace for the piece of code
 			codeVarName = "_gitlego%i" % (dep["start"])
-			localContent = "%s = \"\"\"%s\"\"\"\n" % (codeVarName, localContent.replace("\"\"\"", "\\\"\"\""))
+			localContent = "%s = \"\"\"%s\"\"\"\n" % (codeVarName, localContent.replace("\\", "\\\\").replace("\"\"\"", "\\\"\"\""))
 			localContent += "import imp\n"
 			if dep["namespace"] not in namespaces:
 				localContent += "%s = imp.new_module(\"%s\")\n" % (dep["namespace"], dep["namespace"])
