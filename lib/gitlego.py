@@ -10,7 +10,9 @@ import zlib
 
 class GitLego:
 
-	def __init__(self, filePath, cwd = None):
+	def __init__(self, filePath, cwd = None, implClass = None):
+
+		self.impl = implClass()
 
 		self.filePath = os.path.realpath(filePath)
 		with open(self.filePath, "r") as file:
@@ -21,10 +23,10 @@ class GitLego:
 
 		# The matching pattern for a command
 		self.commandPattern = re.compile(r"""
-				^\#\#\s*git-lego\s+               # Match with the header
-				\b(?P<command>\w+)\b              # The command
-				\s*?\b(?P<args>.*?)$              # Optional arguments
-				""", re.VERBOSE | re.MULTILINE)
+				^%s\s*git-lego\s+               # Match with the header
+				\b(?P<command>\w+)\b            # The command
+				\s*?\b(?P<args>.*?)$            # Optional arguments
+				""" % (re.escape(self.impl.getCommandTagBegin())), re.VERBOSE | re.MULTILINE)
 
 		# Definition data for parsing
 		self.definition = {
@@ -173,7 +175,6 @@ class GitLego:
 
 		contentUpdated = ""
 		index = 0
-		namespaces = set()
 
 		for dep in [item for item in self.data if item["command"] == "dep"]:
 			localPath = self.generateLocalDependencyPath(dep["remote"], dep["local"])
@@ -189,20 +190,11 @@ class GitLego:
 			with open(localPath, "r") as localHandle:
 				localContent = localHandle.read()
 
-			# Format the localContent to use a namespace for the piece of code
-			codeVarName = "_gitlego%i" % (dep["start"])
-			localContent = "%s = \"\"\"%s\"\"\"\n" % (codeVarName, localContent.replace("\\", "\\\\").replace("\"\"\"", "\\\"\"\""))
-			localContent += "import imp\n"
-			if dep["namespace"] not in namespaces:
-				localContent += "%s = imp.new_module(\"%s\")\n" % (dep["namespace"], dep["namespace"])
-				localContent += "%s.__dict__[\"__file__\"] = __file__\n" % (dep["namespace"])
-			localContent += "exec(%s, %s.__dict__)" % (codeVarName, dep["namespace"])
+			localContent = self.impl.contentToLocal(localContent, dep["namespace"])
 
-			contentUpdated += "## git-lego dep \"%s\" \"%s\" \"%s\" \"%s\" %i\n" % (dep["remote"], dep["local"], dep["branch"], dep["namespace"], self.checksum(localContent))
+			contentUpdated += "%s git-lego dep \"%s\" \"%s\" \"%s\" \"%s\" %i%s\n" % (self.impl.getCommandTagBegin(), dep["remote"], dep["local"], dep["branch"], dep["namespace"], self.checksum(localContent), self.impl.getCommandTagEnd())
 			contentUpdated += localContent
-			contentUpdated += "\n## git-lego end\n"
-
-			namespaces.add(dep["namespace"])
+			contentUpdated += "\n%s git-lego end%s\n" % (self.impl.getCommandTagBegin(), self.impl.getCommandTagEnd())
 
 		# Copy the rest of the original file
 		contentUpdated += self.content[index:]

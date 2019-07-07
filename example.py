@@ -15,6 +15,7 @@ _gitlego246 = """#!/usr/bin/python
 import os
 import subprocess
 import sys
+
 import imp
 def gitLegoLoader(command = None):
 	if len(sys.argv) < 2 or sys.argv[1] != "git-lego": return

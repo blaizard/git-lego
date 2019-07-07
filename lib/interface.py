@@ -2,13 +2,19 @@
 # -*- coding: iso-8859-1 -*-
 
 import argparse
+import os
 
 from . import gitlego
+from . import impl
 
 class Interface():
 
-	def __init__(self, filePath, cwd = None):
-		self.gitLego = gitlego.GitLego(filePath, cwd=cwd)
+	def __init__(self, filePath, cwd = None, type = None):
+
+		ext = filePath.split(".")[-1].lower()
+		implClass = impl.definitions[ext] if ext in impl.definitions else types.interface
+
+		self.gitLego = gitlego.GitLego(filePath, cwd=cwd, implClass=implClass)
 
 	def run(self, command):
 
