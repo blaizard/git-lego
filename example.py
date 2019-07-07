@@ -61,6 +61,7 @@ exec(_gitlego0, gitlego.__dict__)
 
 
 
+
 ## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "master" "temp1" 172558474
 _gitlego1 = """#!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
@@ -90,6 +91,7 @@ temp1 = imp.new_module("temp1")
 temp1.__dict__["__file__"] = __file__
 exec(_gitlego1, temp1.__dict__)
 ## git-lego end
+
 
 
 
@@ -161,6 +163,7 @@ temp2 = imp.new_module("temp2")
 temp2.__dict__["__file__"] = __file__
 exec(_gitlego2, temp2.__dict__)
 ## git-lego end
+
 
 
 

@@ -18,7 +18,7 @@ class TypePython(interface.Interface):
 
 		# Format the localContent to use a namespace for the piece of code
 		content = "\"\"\"%s\"\"\"" % (content.replace("\\", "\\\\").replace("\"\"\"", "\\\"\"\""))
-		updatedContent += "import imp\n"
+		updatedContent = "import imp\n"
 		if namespace not in self.namespaces:
 			updatedContent += "%s = imp.new_module(\"%s\")\n" % (namespace, namespace)
 			updatedContent += "%s.__dict__[\"__file__\"] = __file__\n" % (namespace)
