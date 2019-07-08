@@ -1,8 +1,11 @@
 #!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
 
-## git-lego dep "https://github.com/blaizard/git-lego.git" "loader.py" "master" "gitlego" 2123777180
-_gitlego0 = """#!/usr/bin/python
+## git-lego dep "https://github.com/blaizard/git-lego.git" "loader.py" "master" [namespace=gitlego] [checksum=641952371]
+import imp
+gitlego = imp.new_module("gitlego")
+gitlego.__dict__["__file__"] = __file__
+exec("""#!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
 
 import os
@@ -18,52 +21,26 @@ def loader(command = None):
 	lib = imp.load_module("lib", None, os.path.join(gitLegoDepPath, "lib"), ('', '', imp.PKG_DIRECTORY))
 	gitlego = lib.interface.Interface(__file__, cwd=gitLegoPath)
 	sys.exit(gitlego.run(command) if command else gitlego.run(sys.argv[2:]))
-"""
-import imp
-gitlego = imp.new_module("gitlego")
-gitlego.__dict__["__file__"] = __file__
-exec(_gitlego0, gitlego.__dict__)
+""", gitlego.__dict__)
 ## git-lego end
 
 
 
+import lib, sys
+def loader(command = None):
+	gitlegoInstance = lib.interface.Interface(__file__, cwd="temp")
+	gitlegoInstance.run(sys.argv[2:])
+gitlego.loader = loader
 
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "master" "temp1" 172558474
-_gitlego1 = """#!/usr/bin/python
+## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "master" "temp1" 3462859889
+import imp
+temp1 = imp.new_module("temp1")
+temp1.__dict__["__file__"] = __file__
+exec("""#!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
 
 import os
@@ -85,12 +62,14 @@ class Commands:
 		if len(argList) != 1:
 			raise Exception("Malformed sleep command, must take exactly 1 argument.")
 		time.sleep(float(argList[0]))
-"""
-import imp
-temp1 = imp.new_module("temp1")
-temp1.__dict__["__file__"] = __file__
-exec(_gitlego1, temp1.__dict__)
+""", temp1.__dict__)
 ## git-lego end
+
+
+
+
+
+
 
 
 
@@ -134,8 +113,11 @@ exec(_gitlego1, temp1.__dict__)
 
 # Tell me more!
 
-## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "master" "temp2" 1357810346
-_gitlego2 = """#!/usr/bin/python
+## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "master" "temp2" 4101715588
+import imp
+temp2 = imp.new_module("temp2")
+temp2.__dict__["__file__"] = __file__
+exec("""#!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
 
 import os
@@ -157,12 +139,14 @@ class Commands:
 		if len(argList) != 1:
 			raise Exception("Malformed sleep command, must take exactly 1 argument.")
 		time.sleep(float(argList[0]))
-"""
-import imp
-temp2 = imp.new_module("temp2")
-temp2.__dict__["__file__"] = __file__
-exec(_gitlego2, temp2.__dict__)
+""", temp2.__dict__)
 ## git-lego end
+
+
+
+
+
+
 
 
 

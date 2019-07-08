@@ -28,6 +28,11 @@ class GitLego:
 				\s*?\b(?P<args>.*?)$            # Optional arguments
 				""" % (re.escape(self.impl.getCommandTagBegin())), re.VERBOSE | re.MULTILINE)
 
+		# Command options
+		self.commandOptionPattern = re.compile(r"""
+				\[\s*(?P<key>[a-zA-Z]+)\s*=\s*(?P<value>[^\]]*)\s*\] # Match [key=value] type
+				""", re.VERBOSE)
+
 		# Definition data for parsing
 		self.definition = {
 			"dep": {
@@ -133,17 +138,38 @@ class GitLego:
 				self.logFatal("The command '%s' is used incorrectly" % (item["command"]), item["start"])
 
 			# Decode arguments
+			definitionDict = { argDef["name"] : argDef for i, argDef in enumerate(definition["args"]) }
 			argList = shlex.split(item["args"])
+			parseOption = False
 			for index, argDef in enumerate(definition["args"]):
+
+				# Current definition
+				curDef = argDef
+
 				# An argument is available
 				if index < len(argList):
 					arg = argList[index]
-					if re.match(argDef["regexpr"], arg):
-						item[argDef["name"]] = arg
+
+					# Check if this is an option
+					matchOption = re.match(self.commandOptionPattern, arg)
+					if matchOption:
+						parseOption = True
+						# Look for the matching option
+						key = matchOption.group("key").strip()
+						if key in definitionDict:
+							curDef = definitionDict[key]
+							arg = matchOption.group("value").strip()
+						else:
+							self.logFatal("Unknow option key '%s' from command '%s'" % (key, item["command"]), item["start"])
+					elif parseOption:
+						self.logFatal("Arguments cannot follow options in command '%s'" % (item["command"]), item["start"])
+
+					if re.match(curDef["regexpr"], arg):
+						item[curDef["name"]] = arg
 					else:
-						self.logFatal("Argument '%s' of command '%s' should match: %s" % (arg, item["command"], argDef["regexpr"]), item["start"])
-				elif argDef["required"] == False:
-					item[argDef["name"]] = argDef["default"]
+						self.logFatal("Argument '%s' of command '%s' should match: %s" % (arg, item["command"], curDef["regexpr"]), item["start"])
+				elif curDef["required"] == False:
+					item[curDef["name"]] = curDef["default"]
 				else:
 					self.logFatal("Command '%s' requires at least %i arguments" % (item["command"], index + 1), item["start"])
 
@@ -192,7 +218,7 @@ class GitLego:
 
 			localContent = self.impl.contentToLocal(localContent, dep["namespace"])
 
-			contentUpdated += "%s git-lego dep \"%s\" \"%s\" \"%s\" \"%s\" %i%s\n" % (self.impl.getCommandTagBegin(), dep["remote"], dep["local"], dep["branch"], dep["namespace"], self.checksum(localContent), self.impl.getCommandTagEnd())
+			contentUpdated += "%s git-lego dep \"%s\" \"%s\" \"[branch=%s]\" \"[namespace=%s]\" [checksum=%i]%s\n" % (self.impl.getCommandTagBegin(), dep["remote"], dep["local"], dep["branch"], dep["namespace"], self.checksum(localContent), self.impl.getCommandTagEnd())
 			contentUpdated += localContent
 			contentUpdated += "\n%s git-lego end%s\n" % (self.impl.getCommandTagBegin(), self.impl.getCommandTagEnd())
 
