@@ -25,7 +25,7 @@ class GitLego:
 		self.commandPattern = re.compile(r"""
 				^%s\s*git-lego\s+               # Match with the header
 				\b(?P<command>\w+)\b            # The command
-				\s*?\b(?P<args>.*?)$            # Optional arguments
+				\s*?\b(?P<args>.*?)$\r?\n?      # Optional arguments
 				""" % (re.escape(self.impl.getCommandTagBegin())), re.VERBOSE | re.MULTILINE)
 
 		# Command options
