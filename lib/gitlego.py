@@ -67,8 +67,8 @@ class GitLego:
 			nbLines += 1
 		return nbLines
 
-	def shell(self, command, cwd = None):
-		if subprocess.call(command, cwd=cwd) != 0:
+	def shell(self, command, cwd=None, hideStdout=False):
+		if subprocess.call(command, cwd=cwd, stdout=(open(os.devnull, "w") if hideStdout else None)) != 0:
 			self.logFatal("Error while running shell command: %s" % (str(command)))
 
 	"""
@@ -187,12 +187,15 @@ class GitLego:
 
 		# First fetch all dependencies
 		for remote in set(item["remote"] for item in self.data if item["command"] == "dep"):
+			sys.stdout.write("Fetching %s...\r" % (remote))
+			sys.stdout.flush()
 			path = self.generateLocalDependencyPath(remote)
 			if not os.path.isdir(path):
 				os.mkdir(path)
-				self.shell(["git", "clone", remote, path])
+				self.shell(["git", "clone", remote, path], hideStdout=True)
 			else:
-				self.shell(["git", "pull"], cwd=path)
+				self.shell(["git", "pull"], cwd=path, hideStdout=True)
+			sys.stdout.write("\r                                                                                                    \r")
 
 	"""
 	Update dependencies

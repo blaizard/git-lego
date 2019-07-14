@@ -14,19 +14,21 @@ class Interface():
 		ext = filePath.split(".")[-1].lower()
 		implClass = impl.definitions[ext] if ext in impl.definitions else types.interface
 
+		self.fileName = os.path.basename(filePath)
 		self.gitLego = gitlego.GitLego(filePath, cwd=cwd, implClass=implClass)
 
 	def run(self, command):
 
-		parser = argparse.ArgumentParser(description = "Git lego project manager.")
-		subparsers = parser.add_subparsers(dest="command", help="Available commands.")
-		subparsers.add_parser("update", help="Update the current dependencies to their last version.")
-		subparsers.add_parser("status", help="Gives the status of the current file.")
+		parser = argparse.ArgumentParser(description = "git-lego is a script dependency manager")
+		subparsers = parser.add_subparsers(dest="command", help="Available commands")
+		parserUpdate = subparsers.add_parser("update", help="Update the current dependencies to their lastest version")
+		parserUpdate.add_argument("-f", "--force", action="store_true", dest="force", default=False, help="Force the update, disregarding local modifications")
+		subparsers.add_parser("status", help="Show the status of the current file")
 		args = parser.parse_args(command)
 
 		# Excecute the action
 		if args.command == "update":
-			self.update(True)
+			self.update(args.force)
 		elif args.command == "status":
 			self.status()
 
@@ -41,28 +43,44 @@ class Interface():
 		# Check if there is anything to update
 		if force or len(status["modified"]) == 0:
 			self.gitLego.update()
-		else:
-			print("Please commit modified files first:")
-			for modified in status["modified"]:
-				dep = modified["dep"]
-				print("\tmodified: %s %s %s (line: %i..%i)" % (dep["remote"], dep["local"], dep["branch"], self.gitLego.getLineNumber(dep["start"]), self.gitLego.getLineNumber(dep["end"])))
 
-	def status(self):
+		else:
+			print("%s is not in a consistent state." % (self.fileName))
+			print("(use the '--force' option to discard local changes)")
+			self._status(status, onlyModified=True, onlyContent=True)
+
+	def status(self, onlyModified=False, onlyContent=False):
 
 		self.gitLego.parse()
 		status = self.gitLego.status()
+		self._status(status, onlyModified=False, onlyContent=False)
 
-		uptodate = True
+	def _status(self, status, onlyModified=False, onlyContent=False):
 
-		for modified in status["modified"]:
-			dep = modified["dep"]
-			print("\tmodified: %s %s %s (line: %i..%i)" % (dep["remote"], dep["local"], dep["branch"], self.gitLego.getLineNumber(dep["start"]), self.gitLego.getLineNumber(dep["end"])))
-			uptodate = False
-
-		for missing in status["missing"]:
-			dep = missing["dep"]
-			print("\tmissing: %s %s %s (line: %i)" % (dep["remote"], dep["local"], dep["branch"], gitLego.getLineNumber(dep["start"])))
-			uptodate = False
+		uptodate = len(status["modified"]) == 0 and len(status["missing"]) == 0
 
 		if uptodate:
-			print("Already up to date.")
+			if not onlyContent:
+				print("%s is in a consistent state." % (self.fileName))
+				print("(use the 'update' command to fetch the latest updates from remote)")
+
+		else:
+			if not onlyContent:
+				print("%s is not in a consistent state." % (self.fileName))
+				print("(use the 'update' command to fetch the latest updates from remote)")
+
+			if len(status["modified"]):
+				uptodate = False
+				print("\nModified entries:\n")
+				for modified in status["modified"]:
+					dep = modified["dep"]
+					print("\t%s %s %s (line: %i..%i)" % (dep["remote"], dep["local"], dep["branch"], self.gitLego.getLineNumber(dep["start"]), self.gitLego.getLineNumber(dep["end"])))
+				print("")
+
+			if len(status["missing"]) and onlyModified == False:
+				uptodate = False
+				print("Missing entries:\n")
+				for missing in status["missing"]:
+					dep = missing["dep"]
+					print("\t%s %s %s (line: %i)" % (dep["remote"], dep["local"], dep["branch"], gitLego.getLineNumber(dep["start"])))
+				print("")

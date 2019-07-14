@@ -23,13 +23,9 @@ def loader(command = None):
 
 import lib, sys
 def loader(command = None):
-	gitlegoInstance = lib.interface.Interface(__file__, cwd="temp")
+	gitlegoInstance = lib.interface.Interface(__file__, cwd="gitlego-loader-temp")
 	gitlegoInstance.run(sys.argv[2:])
 gitlego.loader = loader
-
-
-
-
 
 ## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "[branch=master]" "[namespace=temp1]" [checksum=3462859889]
 import imp
@@ -81,6 +77,8 @@ class Commands:
 		if not os.path.isdir(newPath):
 			raise Exception("Directory '%s' does not exists." % (newPath))
 		context["cwd"] = newPath
+
+
 
 	@staticmethod
 	def sleep(context, argList):
