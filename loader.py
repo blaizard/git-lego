@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
-
 import imp, os, subprocess, sys
+
 def loader(command = None):
 	if len(sys.argv) < 2 or sys.argv[1] != "git-lego": return
 	gitLegoPath = os.path.join(os.path.realpath(os.path.expanduser("~") if os.path.expanduser("~") else os.path.dirname(__file__)), ".git-lego")
