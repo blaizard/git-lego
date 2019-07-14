@@ -48,4 +48,5 @@ Then you can use the following command:
 ```bash
 python myPythonScrypt.py git-lego update # Update the dependencies
 python myPythonScrypt.py git-lego status # Gives the status of file dependencies
+python myPythonScrypt.py git-lego commit -m "My git-lego commit!" # Commit local changes from the dependencies
 ```
