@@ -1,14 +1,12 @@
 #!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
 
-## git-lego dep "https://github.com/blaizard/git-lego.git" "loader.py" "[branch=master]" "[namespace=gitlego]" [checksum=3765665242]
+## git-lego dep "https://github.com/blaizard/git-lego.git" "loader.py" "[branch=master]" "[namespace=gitlego]" [checksum=4036389741]
 import imp
 gitlego = imp.new_module("gitlego") if "gitlego" not in locals() else gitlego
 gitlego.__dict__["__file__"] = __file__
 exec("""#!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
-
-
 import imp, os, subprocess, sys
 def loader(command = None):
 	if len(sys.argv) < 2 or sys.argv[1] != "git-lego": return

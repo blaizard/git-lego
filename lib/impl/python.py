@@ -21,3 +21,12 @@ class TypePython(interface.Interface):
 		updatedContent += "exec(%s, %s.__dict__)" % (content, namespace)
 
 		return updatedContent
+
+	def contentFromLocal(self, content, namespace):
+
+		beginIndex = content.find("\"\"\"") + 3
+		endIndex = content.rfind("\"\"\"")
+		content = content[beginIndex:endIndex]
+		content.replace("\\\\", "\\").replace("\\\"\"\"", "\"\"\"")
+
+		return content

@@ -195,7 +195,17 @@ class GitLego:
 				self.shell(["git", "clone", remote, path], hideStdout=True)
 			else:
 				self.shell(["git", "pull"], cwd=path, hideStdout=True)
+
+			# Cleanup the repository
+			self._cleanup(path)
 			sys.stdout.write("\r                                                                                                    \r")
+
+	"""
+	Checkout and cleanup specific branch
+	"""
+	def _cleanup(self, path):
+		self.shell(["git", "reset", "--hard"], cwd=path, hideStdout=True)
+		self.shell(["git", "clean", "-f"], cwd=path, hideStdout=True)
 
 	"""
 	Update dependencies
@@ -231,6 +241,43 @@ class GitLego:
 		# Replace the orginal file content (note do not move the file as we want to keep permissions and owner)
 		with open(self.filePath, "w") as fileHandle:
 			fileHandle.write(contentUpdated)
+
+	"""
+	Commit local changes
+	"""
+	def commit(self, message):
+
+		reposToCommit = set()
+
+		status = self.status()
+		for modified in status["modified"]:
+			localContent = modified["content"]
+			dep = modified["dep"]
+			sourcePath = self.generateLocalDependencyPath(dep["remote"], dep["local"])
+			repoPath = self.generateLocalDependencyPath(dep["remote"])
+
+			# Convert the content back
+			try:
+				sourceContent = self.impl.contentFromLocal(localContent, dep["namespace"])
+			except:
+				self.logFatal("Content of '%s' is malformed" % (dep["command"]), dep["start"])
+
+			# Cleanup the branch
+			self._cleanup(repoPath)
+
+			# Write the content
+			if not os.path.isfile(sourcePath):
+				self.logFatal("The file '%s' referred by the 'dep' command does not exists locally" % (sourcePath), dep["start"])
+			with open(sourcePath, "w") as localHandle:
+				localHandle.write(sourceContent)
+
+			# Add add commit
+			self.shell(["git", "add", sourcePath], cwd=repoPath, hideStdout=True)
+			reposToCommit.add(repoPath)
+
+		for repoPath in reposToCommit:
+			self.shell(["git", "commit", "-m", message], cwd=repoPath, hideStdout=True)
+			self.shell(["git", "push"], cwd=repoPath, hideStdout=True)
 
 	"""
 	Give the status of the git entries

@@ -24,7 +24,9 @@ class Interface():
 		parserUpdate = subparsers.add_parser("update", help="Update the current dependencies to their lastest version")
 		parserUpdate.add_argument("-f", "--force", action="store_true", dest="force", default=False, help="Force the update, disregarding local modifications")
 		subparsers.add_parser("status", help="Show the status of the current file")
-		subparsers.add_parser("commit", help="Record changes to the repository")
+		parserCommit = subparsers.add_parser("commit", help="Record changes to the repository")
+		parserCommit.add_argument("-f", "--force", action="store_true", dest="force", default=False, help="Force the commit, disregarding differences with the source")
+		parserCommit.add_argument("-m", "--message", required=True, dest="message", help="Use the given text as the commit message.")
 		args = parser.parse_args(command)
 
 		# Excecute the action
@@ -33,7 +35,7 @@ class Interface():
 		elif args.command == "status":
 			self.status()
 		elif args.command == "commit":
-			self.commit()
+			self.commit(args.force, args.message)
 
 		return 0
 
@@ -58,19 +60,26 @@ class Interface():
 		status = self.gitLego.status()
 		self._status(status)
 
-	def commit(self):
+	def commit(self, force=False, message=""):
 
 		self.gitLego.parse()
+		self.gitLego.fetch()
 		status = self.gitLego.status()
 
 		if len(status["modified"]) == 0:
 			print("There is nothing to commit.")
 
-		#else:
+		elif force == False and len(status["unsync"]) > 0:
+			print("%s is not in-sync." % (self.fileName))
+			print("(use the '--force' option to discard remote changes)")
+			self._status(status, includeList=["unsync"], onlyContent=True)
+
+		else:
+			self.gitLego.commit(message)
+			self.gitLego.update()
+
 
 	def _status(self, status, includeList=["modified", "missing", "unsync"], onlyContent=False):
-
-		uptodate = len(status["modified"]) == 0 and len(status["missing"]) == 0 and len(status["unsync"]) == 0
 
 		definitions = {
 			"modified": {
@@ -82,12 +91,12 @@ class Interface():
 				"singleLine": True
 			},
 			"unsync": {
-				"text": "Entries are not in-sync with the source:",
+				"text": "Entries are not in-sync:",
 				"singleLine": False
 			}
 		}
 
-		if uptodate:
+		if len([1 for name in includeList if len(status[name]) != 0]) == 0:
 			if not onlyContent:
 				print("%s is in a consistent state." % (self.fileName))
 				print("(use the 'update' command to fetch the latest updates from remote)")
