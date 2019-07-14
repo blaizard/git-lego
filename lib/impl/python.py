@@ -4,9 +4,6 @@
 from . import interface
 
 class TypePython(interface.Interface):
-	def __init__(self):
-		self.unique = 0
-		self.namespaces = set()
 
 	def getCommandTagBegin(self):
 		return "##"
@@ -19,12 +16,8 @@ class TypePython(interface.Interface):
 		# Format the localContent to use a namespace for the piece of code
 		content = "\"\"\"%s\"\"\"" % (content.replace("\\", "\\\\").replace("\"\"\"", "\\\"\"\""))
 		updatedContent = "import imp\n"
-		if namespace not in self.namespaces:
-			updatedContent += "%s = imp.new_module(\"%s\")\n" % (namespace, namespace)
-			updatedContent += "%s.__dict__[\"__file__\"] = __file__\n" % (namespace)
+		updatedContent += "%s = imp.new_module(\"%s\") if \"%s\" not in locals() else %s\n" % (namespace, namespace, namespace, namespace)
+		updatedContent += "%s.__dict__[\"__file__\"] = __file__\n" % (namespace)
 		updatedContent += "exec(%s, %s.__dict__)" % (content, namespace)
-
-		self.unique += 1
-		self.namespaces.add(namespace)
 
 		return updatedContent

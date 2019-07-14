@@ -1,12 +1,13 @@
 #!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
 
-## git-lego dep "https://github.com/blaizard/git-lego.git" "loader.py" "[branch=master]" "[namespace=gitlego]" [checksum=4269232004]
+## git-lego dep "https://github.com/blaizard/git-lego.git" "loader.py" "[branch=master]" "[namespace=gitlego]" [checksum=3765665242]
 import imp
-gitlego = imp.new_module("gitlego")
+gitlego = imp.new_module("gitlego") if "gitlego" not in locals() else gitlego
 gitlego.__dict__["__file__"] = __file__
 exec("""#!/usr/bin/python
 # -*- coding: iso-8859-1 -*-
+
 
 import imp, os, subprocess, sys
 def loader(command = None):
@@ -21,72 +22,17 @@ def loader(command = None):
 """, gitlego.__dict__)
 ## git-lego end
 
-import lib, sys
+
+
+import lib, sys, imp
 def loader(command = None):
 	gitlegoInstance = lib.interface.Interface(__file__, cwd="gitlego-loader-temp")
 	gitlegoInstance.run(sys.argv[2:])
+gitlego = imp.new_module("gitlegobypass")
 gitlego.loader = loader
 
-## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "[branch=master]" "[namespace=temp1]" [checksum=3462859889]
-import imp
-temp1 = imp.new_module("temp1")
-temp1.__dict__["__file__"] = __file__
-exec("""#!/usr/bin/python
-# -*- coding: iso-8859-1 -*-
-
-import os
-
-class Commands:
-
-	@staticmethod
-	def cd(context, argList):
-		if len(argList) != 1:
-			raise Exception("Malformed cd command, must take exactly 1 argument.")
-		newPath = os.path.join(context["cwd"], argList[0])
-		newPath = os.path.normpath(newPath)
-		if not os.path.isdir(newPath):
-			raise Exception("Directory '%s' does not exists." % (newPath))
-		context["cwd"] = newPath
-
-	@staticmethod
-	def sleep(context, argList):
-		if len(argList) != 1:
-			raise Exception("Malformed sleep command, must take exactly 1 argument.")
-		time.sleep(float(argList[0]))
-""", temp1.__dict__)
-## git-lego end
-# Tell me more!
-
-## git-lego dep "https://github.com/blaizard/irapp.git" ".irapp/commands.py" "[branch=master]" "[namespace=temp2]" [checksum=4101715588]
-import imp
-temp2 = imp.new_module("temp2")
-temp2.__dict__["__file__"] = __file__
-exec("""#!/usr/bin/python
-# -*- coding: iso-8859-1 -*-
-
-import os
-
-class Commands:
-
-	@staticmethod
-	def cd(context, argList):
-		if len(argList) != 1:
-			raise Exception("Malformed cd command, must take exactly 1 argument.")
-		newPath = os.path.join(context["cwd"], argList[0])
-		newPath = os.path.normpath(newPath)
-		if not os.path.isdir(newPath):
-			raise Exception("Directory '%s' does not exists." % (newPath))
-		context["cwd"] = newPath
 
 
-
-	@staticmethod
-	def sleep(context, argList):
-		if len(argList) != 1:
-			raise Exception("Malformed sleep command, must take exactly 1 argument.")
-		time.sleep(float(argList[0]))
-""", temp2.__dict__)
-## git-lego end
 if __name__ == "__main__":
 
 	gitlego.loader()

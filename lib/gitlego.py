@@ -206,20 +206,20 @@ class GitLego:
 		index = 0
 
 		for dep in [item for item in self.data if item["command"] == "dep"]:
-			localPath = self.generateLocalDependencyPath(dep["remote"], dep["local"])
-			if not os.path.isfile(localPath):
-				self.logFatal("The file '%s' referred by the 'dep' command does not exists locally" % (localPath), dep["start"])
+			sourcePath = self.generateLocalDependencyPath(dep["remote"], dep["local"])
+			if not os.path.isfile(sourcePath):
+				self.logFatal("The file '%s' referred by the 'dep' command does not exists locally" % (sourcePath), dep["start"])
 
 			# Start the copy the original file
 			contentUpdated += self.content[index:dep["start"]]
 			index = dep["end"]
 
 			# Copy the content of the local dependency
-			localContent = ""
-			with open(localPath, "r") as localHandle:
-				localContent = localHandle.read()
+			sourceContent = ""
+			with open(sourcePath, "r") as localHandle:
+				sourceContent = localHandle.read()
 
-			localContent = self.impl.contentToLocal(localContent, dep["namespace"])
+			localContent = self.impl.contentToLocal(sourceContent, dep["namespace"])
 
 			contentUpdated += "%s git-lego dep \"%s\" \"%s\" \"[branch=%s]\" \"[namespace=%s]\" [checksum=%i]%s\n" % (self.impl.getCommandTagBegin(), dep["remote"], dep["local"], dep["branch"], dep["namespace"], self.checksum(localContent), self.impl.getCommandTagEnd())
 			contentUpdated += localContent
@@ -238,8 +238,12 @@ class GitLego:
 	def status(self):
 
 		status = {
+			# The local content has been modified
 			"modified": [],
-			"missing": []
+			# The local content is missing
+			"missing": [],
+			# The local content is not in sync with the source
+			"unsync": []
 		}
 
 		# Read the content of each dependencies and check the checksum 
@@ -254,6 +258,23 @@ class GitLego:
 						"content": content,
 						"dep": dep
 					})
+
+				# Check if the local checksum matches the source checksum
+				sourcePath = self.generateLocalDependencyPath(dep["remote"], dep["local"])
+				if not os.path.isfile(sourcePath):
+					status["unsync"].append({
+						"dep": dep
+					})
+				else:
+					with open(sourcePath, "r") as localHandle:
+						sourceContent = localHandle.read()
+					localContent = self.impl.contentToLocal(sourceContent, dep["namespace"])
+					checksum = self.checksum(localContent)
+					if checksum != int(dep["checksum"]):
+						status["unsync"].append({
+							"dep": dep
+						})
+
 			else:
 				status["missing"].append({
 					"dep": dep
